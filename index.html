@@ -13,57 +13,48 @@ body{
     font-family:Poppins, sans-serif;
 }
 
-/* ===== GALAXY BACKGROUND SYSTEM ===== */
-
-#galaxyWrapper{
+/* Static Galaxy Background */
+#galaxy{
     position:fixed;
-    top:50%;
-    left:50%;
-    width:220vmax;              /* MASSIVE so edges never show */
-    height:220vmax;
-    transform:translate(-50%,-50%);
-    overflow:hidden;
-    pointer-events:none;
+    inset:0;
+    background:url("galaxy.jpg") center center / cover no-repeat;
     z-index:0;
     opacity:0;
     transition:opacity 2s ease;
+    animation:breathing 20s ease-in-out infinite;
+    pointer-events:none;
 }
 
-#galaxy{
-    position:absolute;
-    width:100%;
-    height:100%;
-    background:url("galaxy.jpg") center center / cover no-repeat;
-    animation:rotateGalaxy 240s linear infinite;
-    filter:brightness(1.05) contrast(1.1) saturate(1.1);
+/* subtle breathing zoom */
+@keyframes breathing{
+    0%{ transform:scale(1); }
+    50%{ transform:scale(1.03); }
+    100%{ transform:scale(1); }
 }
 
-@keyframes rotateGalaxy{
-    from{
-        transform:rotate(0deg) scale(1.15);
-    }
-    to{
-        transform:rotate(360deg) scale(1.15);
-    }
+/* depth star layer */
+#starsLayer{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
 }
 
-/* subtle space vignette for realism */
+/* vignette for realism */
 #vignette{
     position:fixed;
     inset:0;
     background:radial-gradient(circle at center,
-        rgba(0,0,0,0) 50%,
-        rgba(0,0,0,0.6) 100%);
+        rgba(0,0,0,0) 60%,
+        rgba(0,0,0,0.7) 100%);
+    z-index:2;
     pointer-events:none;
-    z-index:1;
 }
-
-/* ===== CANVAS + LETTER ===== */
 
 canvas{
     display:block;
     position:relative;
-    z-index:2;
+    z-index:3;
 }
 
 #letter{
@@ -80,16 +71,14 @@ canvas{
     line-height:1.6;
     font-size:18px;
     pointer-events:none;
-    z-index:3;
+    z-index:4;
 }
 </style>
 </head>
 <body>
 
-<div id="galaxyWrapper">
-    <div id="galaxy"></div>
-</div>
-
+<div id="galaxy"></div>
+<canvas id="starsLayer"></canvas>
 <div id="vignette"></div>
 
 <canvas id="canvas"></canvas>
@@ -105,24 +94,31 @@ canvas{
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+const starCanvas = document.getElementById("starsLayer");
+const starCtx = starCanvas.getContext("2d");
+
+const galaxy = document.getElementById("galaxy");
 const letter = document.getElementById("letter");
-const galaxyWrapper = document.getElementById("galaxyWrapper");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-window.addEventListener("resize", ()=>{
+function resize(){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-});
+    starCanvas.width = window.innerWidth;
+    starCanvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
 
 let stars = [];
+let driftingStars = [];
 let clickCount = 0;
 const requiredStars = 200;
 let reveal = false;
 let collapse = false;
 let collapseFrames = 0;
 
+/* clickable stars */
 class Star{
     constructor(x,y){
         this.x = x;
@@ -131,19 +127,16 @@ class Star{
         this.vy = (Math.random()-0.5)*2;
         this.size = 1 + Math.random()*2;
     }
-
     update(){
         if(!collapse){
             this.x += this.vx;
             this.y += this.vy;
-
-            if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
-            if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            if(this.x<0||this.x>canvas.width) this.vx*=-1;
+            if(this.y<0||this.y>canvas.height) this.vy*=-1;
         } else {
-            this.x += (canvas.width/2 - this.x) * 0.02;
-            this.y += (canvas.height/2 - this.y) * 0.02;
+            this.x += (canvas.width/2 - this.x)*0.02;
+            this.y += (canvas.height/2 - this.y)*0.02;
         }
-
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
         ctx.fillStyle="white";
@@ -151,9 +144,34 @@ class Star{
     }
 }
 
+/* drifting depth stars */
+for(let i=0;i<300;i++){
+    driftingStars.push({
+        x:Math.random()*starCanvas.width,
+        y:Math.random()*starCanvas.height,
+        size:Math.random()*2,
+        speed:0.2+Math.random()*0.5
+    });
+}
+
+function animateDrift(){
+    starCtx.clearRect(0,0,starCanvas.width,starCanvas.height);
+    driftingStars.forEach(s=>{
+        s.y += s.speed;
+        if(s.y>starCanvas.height){
+            s.y = 0;
+            s.x = Math.random()*starCanvas.width;
+        }
+        starCtx.fillStyle="rgba(255,255,255,0.8)";
+        starCtx.fillRect(s.x,s.y,s.size,s.size);
+    });
+    requestAnimationFrame(animateDrift);
+}
+animateDrift();
+
 canvas.addEventListener("click",(e)=>{
     if(!reveal){
-        stars.push(new Star(e.clientX, e.clientY));
+        stars.push(new Star(e.clientX,e.clientY));
         clickCount++;
     }
 });
@@ -173,13 +191,12 @@ function animate(){
             40
         );
 
-        if(clickCount >= requiredStars){
+        if(clickCount>=requiredStars){
             collapse = true;
             collapseFrames++;
-
-            if(collapseFrames > 200){
+            if(collapseFrames>200){
                 reveal = true;
-                galaxyWrapper.style.opacity = 1;
+                galaxy.style.opacity = 1;
                 setTimeout(()=>{
                     letter.style.opacity = 1;
                 },1000);
@@ -189,7 +206,6 @@ function animate(){
 
     requestAnimationFrame(animate);
 }
-
 animate();
 </script>
 
