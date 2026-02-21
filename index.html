@@ -12,9 +12,36 @@ body{
     background:black;
     font-family:Poppins, sans-serif;
 }
+
+/* Galaxy Background */
+#galaxy {
+    position:fixed;
+    width:120%;
+    height:120%;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:url("galaxy.jpg") center center / cover no-repeat;
+    opacity:0;
+    transition:opacity 2s ease;
+    animation:rotateGalaxy 120s linear infinite;
+
+    z-index:0;
+    pointer-events:none; /* 🔥 allows clicks to pass through */
+}
+
+@keyframes rotateGalaxy {
+    0% { transform:translate(-50%,-50%) rotate(0deg) scale(1); }
+    50% { transform:translate(-50%,-50%) rotate(180deg) scale(1.05); }
+    100% { transform:translate(-50%,-50%) rotate(360deg) scale(1); }
+}
+
 canvas{
     display:block;
+    position:relative;
+    z-index:1; /* above galaxy */
 }
+
 #letter{
     position:absolute;
     top:50%;
@@ -28,46 +55,39 @@ canvas{
     transition:opacity 2s ease;
     line-height:1.6;
     font-size:18px;
-
-    /* 🔥 THIS FIXES EVERYTHING */
     pointer-events:none;
+    z-index:2; /* above everything */
 }
 </style>
 </head>
 <body>
 
+<div id="galaxy"></div>
 <canvas id="canvas"></canvas>
 
 <div id="letter">
-    <h2>To moy sitara,</h2>
-    <p>
-        Out of all the chaos in this universe,
-        you are the light that feels constant.
-    </p>
-    <p>
-        I didn’t just meet someone.
-        I found moy forever tara that I was always meant to find.
-    </p>
-    <p>
-        In a sky full of different stars,
-        you are the one that I stare at.
-    </p>
-    <p>
-        You are the reason I get to poop normally everyday.
-        THANK YOU!! I LOVE YOU SMURFF!!
-    </p>
+    <h2>To My Star,</h2>
+    <p>Out of all the chaos in this universe, you are the light that feels constant.</p>
+    <p>I didn’t just meet someone. I found the star I was always meant to find.</p>
+    <p>In a sky full of possibilities, you are the one that shines differently.</p>
+    <p>You are the reason my universe feels alive.</p>
 </div>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const letter = document.getElementById("letter");
+const galaxy = document.getElementById("galaxy");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+window.addEventListener("resize", ()=>{
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
 let stars = [];
-let particles = [];
 let clickCount = 0;
 const requiredStars = 200;
 let reveal = false;
@@ -102,24 +122,6 @@ class Star{
     }
 }
 
-class Particle{
-    constructor(){
-        this.angle = Math.random()*Math.PI*2;
-        this.radius = Math.random()*200;
-    }
-
-    update(){
-        this.angle += 0.01;
-        const x = canvas.width/2 + Math.cos(this.angle)*this.radius;
-        const y = canvas.height/2 + Math.sin(this.angle)*this.radius;
-
-        ctx.beginPath();
-        ctx.arc(x,y,2,0,Math.PI*2);
-        ctx.fillStyle="white";
-        ctx.fill();
-    }
-}
-
 canvas.addEventListener("click",(e)=>{
     if(!reveal){
         stars.push(new Star(e.clientX, e.clientY));
@@ -131,7 +133,6 @@ function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if(!reveal){
-
         stars.forEach(s=>s.update());
 
         ctx.font="14px Poppins";
@@ -149,17 +150,12 @@ function animate(){
 
             if(collapseFrames > 200){
                 reveal = true;
-                for(let i=0;i<400;i++){
-                    particles.push(new Particle());
-                }
+                galaxy.style.opacity = 1;
                 setTimeout(()=>{
                     letter.style.opacity = 1;
                 },1000);
             }
         }
-
-    } else {
-        particles.forEach(p=>p.update());
     }
 
     requestAnimationFrame(animate);
