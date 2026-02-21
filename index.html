@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galaxy Letter</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+    font-family:Poppins, sans-serif;
+}
+canvas{
+    display:block;
+}
+#letter{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:80%;
+    max-width:700px;
+    text-align:center;
+    color:white;
+    opacity:0;
+    transition:opacity 2s ease;
+    line-height:1.6;
+    font-size:18px;
+
+    /* 🔥 THIS FIXES EVERYTHING */
+    pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="letter">
+    <h2>To moy sitara,</h2>
+    <p>
+        Out of all the chaos in this universe,
+        you are the light that feels constant.
+    </p>
+    <p>
+        I didn’t just meet someone.
+        I found moy forever tara that I was always meant to find.
+    </p>
+    <p>
+        In a sky full of different stars,
+        you are the one that I stare at.
+    </p>
+    <p>
+        You are the reason I get to poop normally everyday.
+        THANK YOU!! I LOVE YOU SMURFF!!
+    </p>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const letter = document.getElementById("letter");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let stars = [];
+let particles = [];
+let clickCount = 0;
+const requiredStars = 200;
+let reveal = false;
+let collapse = false;
+let collapseFrames = 0;
+
+class Star{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random()-0.5)*2;
+        this.vy = (Math.random()-0.5)*2;
+        this.size = 1 + Math.random()*2;
+    }
+
+    update(){
+        if(!collapse){
+            this.x += this.vx;
+            this.y += this.vy;
+
+            if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        } else {
+            this.x += (canvas.width/2 - this.x) * 0.02;
+            this.y += (canvas.height/2 - this.y) * 0.02;
+        }
+
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+        ctx.fillStyle="white";
+        ctx.fill();
+    }
+}
+
+class Particle{
+    constructor(){
+        this.angle = Math.random()*Math.PI*2;
+        this.radius = Math.random()*200;
+    }
+
+    update(){
+        this.angle += 0.01;
+        const x = canvas.width/2 + Math.cos(this.angle)*this.radius;
+        const y = canvas.height/2 + Math.sin(this.angle)*this.radius;
+
+        ctx.beginPath();
+        ctx.arc(x,y,2,0,Math.PI*2);
+        ctx.fillStyle="white";
+        ctx.fill();
+    }
+}
+
+canvas.addEventListener("click",(e)=>{
+    if(!reveal){
+        stars.push(new Star(e.clientX, e.clientY));
+        clickCount++;
+    }
+});
+
+function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    if(!reveal){
+
+        stars.forEach(s=>s.update());
+
+        ctx.font="14px Poppins";
+        ctx.textAlign="center";
+        ctx.fillStyle="rgba(255,255,255,0.6)";
+        ctx.fillText(
+            "Stars created: " + clickCount + " / " + requiredStars,
+            canvas.width/2,
+            40
+        );
+
+        if(clickCount >= requiredStars){
+            collapse = true;
+            collapseFrames++;
+
+            if(collapseFrames > 200){
+                reveal = true;
+                for(let i=0;i<400;i++){
+                    particles.push(new Particle());
+                }
+                setTimeout(()=>{
+                    letter.style.opacity = 1;
+                },1000);
+            }
+        }
+
+    } else {
+        particles.forEach(p=>p.update());
+    }
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
